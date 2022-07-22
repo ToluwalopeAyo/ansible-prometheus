@@ -1,0 +1,91 @@
+---
+
+- name: "Install and Configure Prometheus"
+  hosts: test
+  become: yes
+
+  tasks:
+    - name: "Create Prometheus User"
+      user:
+        name: prometheus
+        create_home: false
+
+    - name: "Create directory to host prometheus config"
+      file:
+        path: /etc/prometheus/
+        owner: prometheus
+        group: prometheus
+        state: directory
+
+    - name: "Create directory to host prometheus data"
+      file:
+        path: /var/lib/prometheus
+        owner: prometheus
+        group: prometheus
+        state: directory
+
+    - name: "Install Prometheus"
+      unarchive:
+        src: https://github.com/prometheus/prometheus/releases/download/v2.37.0/prometheus-2.37.0.linux-amd64.tar.gz
+        dest: /home/ubuntu/
+        remote_src: yes
+
+    - name: "Move directories"
+      become: true
+      copy:
+        src: /home/ubuntu/prometheus-2.37.0.linux-amd64/prometheus
+        dest: /usr/local/bin/
+        owner: prometheus
+        group: prometheus
+        mode: '744'
+        remote_src: yes
+    
+    - name: "Mover binaries"
+      become: true
+      copy:
+        src: /home/ubuntu/prometheus-2.37.0.linux-amd64/promtool
+        dest: /usr/local/bin/
+        owner: prometheus
+        group: prometheus
+        mode: '744'
+        remote_src: yes
+    
+    - name: "Move consoles"
+      become: true
+      copy:
+        src: /home/ubuntu/prometheus-2.37.0.linux-amd64/consoles
+        dest: /etc/prometheus/
+        owner: prometheus
+        group: prometheus
+        directory_mode: yes
+        remote_src: yes
+      
+    - name: "Move con"
+      become: true
+      copy: 
+        src: /home/ubuntu/prometheus-2.37.0.linux-amd64/console_libraries
+        dest: /etc/prometheus/
+        owner: prometheus
+        group: prometheus
+        directory_mode: yes
+        remote_src: yes
+    
+    - name: "Configure prometheus"
+      become: true
+      copy:
+        src: prometheus.yml
+        dest: /etc/prometheus/prometheus.yml
+    
+    - name: "add prometheus service config"
+      become: true
+      copy: 
+        src: prometheus.service 
+        dest: /etc/systemd/system/
+    
+    - name: "Enable prometheus service"
+      become: true
+      systemd:
+        state: restarted
+        daemon_reload: yes
+        name: prometheus
+        enabled: yes
